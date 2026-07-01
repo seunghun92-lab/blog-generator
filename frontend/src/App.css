@@ -1,0 +1,274 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: #f7f5f0;
+  color: #2c2c2a;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 16px 80px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.back-btn {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e8e4d8;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #4a4a44;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background: #f7f5f0;
+}
+
+.app-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2d3b2d;
+  margin-bottom: 8px;
+}
+
+.app-header p {
+  color: #6b6b66;
+  font-size: 14px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e8e4d8;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.card h2 {
+  font-size: 17px;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card h3 {
+  font-size: 14px;
+  color: #6b6b66;
+  margin: 20px 0 10px;
+}
+
+.hint {
+  font-size: 13px;
+  color: #9a9a92;
+  margin: 4px 0 16px;
+}
+
+.upload-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #e8a85c;
+  border-radius: 12px;
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #8a8a82;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.upload-zone:hover {
+  background: #fdf8f0;
+}
+
+.upload-zone.drag-active {
+  background: #fdf0db;
+  border-color: #d68f3f;
+  border-style: solid;
+}
+
+.guide-preview {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #e8a85c;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  color: #4a4a44;
+}
+
+.photo-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.photo-thumb {
+  position: relative;
+  width: 72px;
+}
+
+.photo-thumb img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e8e4d8;
+}
+
+.photo-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #c0392b;
+  color: white;
+  border: 2px solid white;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.photo-remove-btn:hover {
+  background: #a52f21;
+}
+
+.photo-thumb span {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: #8a8a82;
+  margin-top: 2px;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.field label {
+  font-size: 12px;
+  color: #8a8a82;
+}
+
+.field select {
+  padding: 10px;
+  border: 1px solid #e8e4d8;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  color: #2c2c2a;
+}
+
+.generate-btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: #e8a85c;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 8px 0 32px;
+  transition: opacity 0.15s;
+}
+
+.generate-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  color: #c0392b;
+  background: #fdecea;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.results h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.result-box {
+  background: white;
+  border: 1px solid #e8e4d8;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f7f5f0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a4a44;
+}
+
+.copy-btn {
+  padding: 6px 14px;
+  background: #2d3b2d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.result-content {
+  margin: 0;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  color: #2c2c2a;
+}
+
+.warn {
+  font-size: 12px;
+  color: #9a9a92;
+  text-align: center;
+  margin-top: 16px;
+}

@@ -91,12 +91,18 @@ async def generate_post(
     parsed = {}
 
     for attempt in range(3):
+        # 재시도 시 글자수 부족 알림 추가
+        if attempt > 0:
+            retry_prompt = user_prompt + f"\n\n[중요] 이전 답변이 글자수 기준({char_count}자 내외)에 미달했습니다. 이번엔 반드시 내용을 더 풍부하고 자세하게 작성해서 글자수를 맞춰주세요. 음식 맛, 분위기, 서비스, 주변 환경 등을 더 구체적으로 묘사해주세요."
+        else:
+            retry_prompt = user_prompt
+
         try:
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
+                    {"role": "user", "content": retry_prompt},
                 ],
                 temperature=0.9,
             )

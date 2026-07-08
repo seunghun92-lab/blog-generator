@@ -272,3 +272,52 @@ body {
   text-align: center;
   margin-top: 16px;
 }
+
+.history-btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e8e4d8;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #4a4a44;
+  cursor: pointer;
+}
+
+.history-btn:hover {
+  background: #f7f5f0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-item {
+  background: white;
+  border: 1px solid #e8e4d8;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.history-item:hover {
+  background: #f7f5f0;
+}
+
+.history-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c2c2a;
+  margin-bottom: 4px;
+}
+
+.history-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #9a9a92;
+}

@@ -6,11 +6,12 @@ import json
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
+from supabase import create_client
 from dotenv import load_dotenv
 
 from docx_parser import extract_guide_text
 from prompt_builder import build_system_prompt, build_user_prompt
-from response_parser import parse_gpt_response, split_photo_markers
+from response_parser import parse_gpt_response, split_photo_markers, force_line_breaks
 
 load_dotenv()
 
@@ -19,13 +20,14 @@ app = FastAPI(title="블로그 글 생성기 API")
 # 프론트엔드(Vercel)에서 호출할 수 있도록 CORS 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 운영 배포 시 프론트엔드 도메인으로 제한 권장
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 
 @app.get("/")
@@ -35,10 +37,6 @@ def health_check():
 
 @app.post("/api/parse-guide")
 async def parse_guide(guide_file: UploadFile = File(...)):
-    """
-    가이드 .docx 파일을 업로드 받아서 텍스트로 추출해 미리보기로 돌려줌.
-    프론트엔드 1단계 박스에 "내용을 자동으로 읽어올게요" 부분에 해당.
-    """
     if not guide_file.filename.endswith(".docx"):
         raise HTTPException(status_code=400, detail="docx 파일만 업로드 가능합니다.")
 
@@ -61,12 +59,8 @@ async def generate_post(
     char_count: int = Form(1200),
     profile_json: str = Form("{}"),
     style_json: str = Form("{}"),
+    guide_filename: str = Form(""),
 ):
-    """
-    가이드 텍스트 + 옵션을 받아서 GPT로 블로그 글을 생성하고
-    제목/본문/주소/전화번호/링크/해시태그 6개 항목으로 분리해서 반환.
-    본문은 사진 마커 기준으로도 추가 분리해서 함께 내려줌.
-    """
     try:
         profile = json.loads(profile_json)
     except json.JSONDecodeError:
@@ -93,25 +87,60 @@ async def generate_post(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0.9,  # 매번 다른 느낌의 글이 나오도록 (랜덤 옵션과도 잘 맞음)
+            temperature=0.9,
         )
         raw_text = response.choices[0].message.content
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"글 생성 중 오류가 발생했습니다: {str(e)}")
 
     parsed = parse_gpt_response(raw_text)
-    body_segments = split_photo_markers(parsed["본문"])
+    fixed_body = force_line_breaks(parsed["본문"])
+    body_segments = split_photo_markers(fixed_body)
+
+    # Supabase에 저장 (실패해도 응답은 정상 반환)
+    try:
+        supabase.table("post").insert({
+            "제목": parsed["제목"],
+            "본문": fixed_body,
+            "주소": parsed["주소"],
+            "전화번호": parsed["전화번호"],
+            "링크": parsed["링크"],
+            "해시태그": parsed["해시태그"],
+            "가이드파일명": guide_filename,
+        }).execute()
+    except Exception as e:
+        print(f"Supabase 저장 실패 (무시): {e}")
 
     return {
         "제목": parsed["제목"],
-        "본문": parsed["본문"],
-        "본문_세그먼트": body_segments,  # 사진 위치까지 반영해서 프론트에서 바로 렌더링 가능
+        "본문": fixed_body,
+        "본문_세그먼트": body_segments,
         "주소": parsed["주소"],
         "전화번호": parsed["전화번호"],
         "링크": parsed["링크"],
         "해시태그": parsed["해시태그"],
-        "raw": raw_text,  # 디버깅/예외 상황 대비용 원본
+        "raw": raw_text,
     }
+
+
+@app.get("/api/history")
+async def get_history():
+    """저장된 글 목록 최신순으로 반환"""
+    try:
+        result = supabase.table("post").select("id, created_at, 제목, 가이드파일명").order("created_at", desc=True).limit(50).execute()
+        return {"history": result.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"기록 조회 실패: {str(e)}")
+
+
+@app.get("/api/history/{post_id}")
+async def get_post(post_id: int):
+    """특정 글 상세 조회"""
+    try:
+        result = supabase.table("post").select("*").eq("id", post_id).single().execute()
+        return result.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"글 조회 실패: {str(e)}")
 
 
 if __name__ == "__main__":

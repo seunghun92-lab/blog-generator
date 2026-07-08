@@ -26,3 +26,10 @@ dist-ssr
 .venv
 .vercel
 venv/
+
+venv/
+blog_venv/
+.env
+backend/.env
+venv/
+blog_venv/

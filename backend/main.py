@@ -10,14 +10,13 @@ from supabase import create_client
 from dotenv import load_dotenv
 
 from docx_parser import extract_guide_text
-from prompt_builder import build_system_prompt, build_user_prompt
+from prompt_builder import build_system_prompt, build_user_prompt, CHAR_COUNT_RANGE
 from response_parser import parse_gpt_response, split_photo_markers, force_line_breaks
 
 load_dotenv()
 
 app = FastAPI(title="블로그 글 생성기 API")
 
-# 프론트엔드(Vercel)에서 호출할 수 있도록 CORS 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,6 +27,13 @@ app.add_middleware(
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+
+MIN_CHARS = {
+    800: 350,
+    1200: 800,
+    1600: 1200,
+    2000: 1600,
+}
 
 
 @app.get("/")
@@ -80,24 +86,34 @@ async def generate_post(
         style=style,
     )
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.9,
-        )
-        raw_text = response.choices[0].message.content
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"글 생성 중 오류가 발생했습니다: {str(e)}")
+    min_chars = MIN_CHARS.get(char_count, char_count // 2)
+    raw_text = ""
+    parsed = {}
 
-    parsed = parse_gpt_response(raw_text)
+    for attempt in range(3):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.9,
+            )
+            raw_text = response.choices[0].message.content
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"글 생성 중 오류가 발생했습니다: {str(e)}")
+
+        parsed = parse_gpt_response(raw_text)
+        body_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
+        print(f"[시도 {attempt+1}] 본문 글자수: {body_len} / 최소: {min_chars}")
+
+        if body_len >= min_chars:
+            break
+
     fixed_body = force_line_breaks(parsed["본문"])
     body_segments = split_photo_markers(fixed_body)
 
-    # Supabase에 저장 (실패해도 응답은 정상 반환)
     try:
         supabase.table("post").insert({
             "제목": parsed["제목"],
@@ -125,7 +141,6 @@ async def generate_post(
 
 @app.get("/api/history")
 async def get_history():
-    """저장된 글 목록 최신순으로 반환"""
     try:
         result = supabase.table("post").select("id, created_at, 제목, 가이드파일명").order("created_at", desc=True).limit(50).execute()
         return {"history": result.data}
@@ -135,7 +150,6 @@ async def get_history():
 
 @app.get("/api/history/{post_id}")
 async def get_post(post_id: int):
-    """특정 글 상세 조회"""
     try:
         result = supabase.table("post").select("*").eq("id", post_id).single().execute()
         return result.data

@@ -35,6 +35,13 @@ MIN_CHARS = {
     2000: 1600,
 }
 
+MAX_TOKENS = {
+    800: 1500,
+    1200: 2500,
+    1600: 3500,
+    2000: 4500,
+}
+
 
 @app.get("/")
 def health_check():
@@ -87,13 +94,13 @@ async def generate_post(
     )
 
     min_chars = MIN_CHARS.get(char_count, char_count // 2)
+    max_tokens = MAX_TOKENS.get(char_count, 3000)
     raw_text = ""
     parsed = {}
 
     for attempt in range(3):
-        # 재시도 시 글자수 부족 알림 추가
         if attempt > 0:
-            retry_prompt = user_prompt + f"\n\n[중요] 이전 답변이 글자수 기준({char_count}자 내외)에 미달했습니다. 이번엔 반드시 내용을 더 풍부하고 자세하게 작성해서 글자수를 맞춰주세요. 음식 맛, 분위기, 서비스, 주변 환경 등을 더 구체적으로 묘사해주세요."
+            retry_prompt = user_prompt + f"\n\n[중요] 이전 답변이 글자수 기준({char_count}자)에 미달했습니다. 이번엔 반드시 내용을 더 풍부하고 자세하게 작성해서 글자수를 맞춰주세요. 맛, 분위기, 서비스, 주변 환경, 개인 감상 등을 더 구체적으로 묘사해주세요."
         else:
             retry_prompt = user_prompt
 
@@ -105,6 +112,7 @@ async def generate_post(
                     {"role": "user", "content": retry_prompt},
                 ],
                 temperature=0.9,
+                max_tokens=max_tokens,
             )
             raw_text = response.choices[0].message.content
         except Exception as e:
@@ -112,7 +120,7 @@ async def generate_post(
 
         parsed = parse_gpt_response(raw_text)
         body_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
-        print(f"[시도 {attempt+1}] 본문 글자수: {body_len} / 최소: {min_chars}")
+        print(f"[시도 {attempt+1}] 본문 글자수: {body_len} / 최소: {min_chars} / max_tokens: {max_tokens}")
 
         if body_len >= min_chars:
             break

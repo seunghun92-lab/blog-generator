@@ -95,8 +95,9 @@ async def generate_post(
 
     min_chars = MIN_CHARS.get(char_count, char_count // 2)
     max_tokens = MAX_TOKENS.get(char_count, 3000)
-    raw_text = ""
-    parsed = {}
+    best_body_len = -1
+    best_raw_text = ""
+    best_parsed = {}
 
     for attempt in range(3):
         if attempt > 0:
@@ -122,8 +123,56 @@ async def generate_post(
         body_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
         print(f"[시도 {attempt+1}] 본문 글자수: {body_len} / 최소: {min_chars} / max_tokens: {max_tokens}")
 
+        # 이번 시도가 지금까지 중 가장 길면 저장해둔다 (3번 다 기준 미달이어도 최선의 결과를 쓰기 위해)
+        if body_len > best_body_len:
+            best_body_len = body_len
+            best_raw_text = raw_text
+            best_parsed = parsed
+
         if body_len >= min_chars:
             break
+
+    raw_text = best_raw_text
+    parsed = best_parsed
+
+    # 그래도 목표 글자수(char_count)에 못 미치면, 처음부터 새로 쓰게 하는 대신
+    # 이미 쓴 본문 뒤에 자연스럽게 이어지는 내용만 추가로 받아서 붙인다.
+    # (매번 새로 생성하는 것보다 목표 글자수에 훨씬 안정적으로 수렴한다)
+    for _ in range(2):
+        body_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
+        shortfall = char_count - body_len
+        if shortfall <= 0:
+            break
+
+        continue_prompt = (
+            f"방금 쓴 블로그 본문이 목표 글자수(공백 제외 {char_count}자)에서 "
+            f"아직 약 {shortfall}자 정도 부족해. 지금까지 쓴 본문 맨 뒤에 자연스럽게 "
+            f"이어지는 추가 내용만 써줘. 맛, 분위기, 서비스, 주변 환경, 개인 감상 등을 "
+            f"더 구체적으로 묘사해서 분량을 채우되, 새로운 [사진N] 마커는 절대 넣지 말고 "
+            f"순수 본문 이어지는 텍스트만 출력해. [제목], [주소] 같은 다른 항목은 다시 쓰지 마."
+        )
+
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": raw_text},
+                    {"role": "user", "content": continue_prompt},
+                ],
+                temperature=0.9,
+                max_tokens=max_tokens,
+            )
+            extra_text = response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"[이어쓰기 실패, 기존 결과 유지] {e}")
+            break
+
+        parsed["본문"] = parsed["본문"].rstrip() + "\n\n" + extra_text
+        raw_text = raw_text + "\n\n" + extra_text
+        new_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
+        print(f"[이어쓰기] 본문 글자수: {new_len} / 목표: {char_count}")
 
     fixed_body = force_line_breaks(parsed["본문"])
     body_segments = split_photo_markers(fixed_body)

@@ -53,25 +53,6 @@ export const POST_TYPE_OPTIONS = [
   { value: "정보성", label: "정보성 글" },
 ];
 
-export const TONE_OPTIONS = [
-  { value: "", label: "말투 자동 랜덤" },
-  { value: "전체반말", label: "전체 반말체 (친구한테 말하듯)" },
-  { value: "존댓말감상반말", label: "존댓말 기본 + 다양한 어미 (단조롭지 않은 자연스러운 존댓말)" },
-  { value: "발랄캐주얼", label: "발랄하고 캐주얼한 문체" },
-  { value: "진중리뷰", label: "진중한 리뷰 스타일" },
-  { value: "친근말거는", label: "친근하고 말 거는 듯한 문체" },
-  { value: "명료깔끔", label: "명료하고 깔끔한 설명체" },
-  { value: "유머위트", label: "유머를 섞은 위트 있는 문체" },
-  { value: "솔직후기", label: "솔직한 후기 스타일" },
-  { value: "전문분석", label: "전문가 느낌의 분석적인 문체" },
-  { value: "꼼꼼정보", label: "꼼꼼하게 따지는 정보 중심 문체" },
-  { value: "초보서툰", label: "초보자가 쓴 듯한 솔직하고 서툰 문체" },
-  { value: "따뜻소개", label: "따뜻하게 소개하는 문체" },
-  { value: "현실담백", label: "현실적이고 담백한 후기체" },
-  { value: "간결인스타", label: "간결하고 감각적인 인스타 감성" },
-  { value: "객관백과", label: "객관적인 백과사전 스타일" },
-];
-
 export const STRUCTURE_OPTIONS = [
   { value: "", label: "구조 랜덤 선택 자동 랜덤" },
   { value: "스토리텔링", label: "스토리텔링 형식" },

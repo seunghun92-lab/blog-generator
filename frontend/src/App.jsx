@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import {
   AGE_OPTIONS, GENDER_OPTIONS, JOB_OPTIONS, SITUATION_OPTIONS,
-  POST_TYPE_OPTIONS, TONE_OPTIONS, STRUCTURE_OPTIONS, CHAR_COUNT_OPTIONS,
+  POST_TYPE_OPTIONS, STRUCTURE_OPTIONS, CHAR_COUNT_OPTIONS,
 } from "./options";
+
+const TONE = "존댓말감상반말";
 import { parseGuideFile, generatePost, getHistory, getPost } from "./api";
 
 const RESULT_FIELDS = [
@@ -100,7 +102,6 @@ export default function App() {
   const [job, setJob] = useState("");
   const [situation, setSituation] = useState("");
   const [postType, setPostType] = useState("후기성");
-  const [tone, setTone] = useState("");
   const [structure, setStructure] = useState("");
   const [charCount, setCharCount] = useState(1200);
 
@@ -169,7 +170,7 @@ export default function App() {
         photoCount: photos.length,
         charCount,
         profile: { age, gender, job, situation },
-        style: { post_type: postType, tone, structure },
+        style: { post_type: postType, tone: TONE, structure },
         guideFilename: guideFile?.name || "",
       });
       setResult(data);
@@ -327,7 +328,6 @@ export default function App() {
         </div>
         <h3>스타일 설정 (선택 안 하면 랜덤)</h3>
         <div className="field-row">
-          <Dropdown label="말투" options={TONE_OPTIONS} value={tone} onChange={setTone} />
           <Dropdown label="글 구조" options={STRUCTURE_OPTIONS} value={structure} onChange={setStructure} />
         </div>
       </section>

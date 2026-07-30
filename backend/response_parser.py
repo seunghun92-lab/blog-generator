@@ -4,7 +4,7 @@ GPT 응답 텍스트를 [제목]/[본문]/[주소]/[전화번호]/[링크]/[해�
 import re
 
 SECTION_ORDER = ["제목", "본문", "주소", "전화번호", "링크", "해시태그"]
-MAX_LINE_LENGTH = 22  # 한 줄 최대 글자수 (프롬프트 규칙과 동일하게 유지)
+SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[.!?])\s+")
 
 
 def parse_gpt_response(raw_text: str) -> dict:
@@ -30,38 +30,24 @@ def parse_gpt_response(raw_text: str) -> dict:
     return result
 
 
-def force_line_breaks(text: str, max_length: int = MAX_LINE_LENGTH) -> str:
+def force_line_breaks(text: str) -> str:
     """
-    GPT가 줄바꿈 규칙을 지키지 않고 한 줄을 길게 써버린 경우를 대비한 안전장치.
-    이미 존재하는 줄바꿈(\n)은 그대로 유지하고, 그 안에서 max_length를 넘는 줄만
-    공백 기준으로 다시 끊어준다. [사진N] 마커가 있는 줄은 건드리지 않는다.
+    GPT가 한 문단을 여러 문장이 이어진 긴 한 줄로 써버린 경우를 대비한 안전장치.
+    문단 구분(빈 줄)과 [사진N] 마커는 그대로 두고, 문장(마침표/느낌표/물음표 기준)마다
+    줄바꿈을 넣어서 네이버 블로그 특유의 "문장 단위 줄바꿈" 형태로 만든다.
     """
     lines = text.split("\n")
     result_lines = []
 
     for line in lines:
+        stripped = line.strip()
         # 사진 마커만 있는 줄이거나 빈 줄은 그대로 둔다
-        if not line.strip() or re.fullmatch(r"\[사진\d+\]", line.strip()):
+        if not stripped or re.fullmatch(r"\[사진\d+\]", stripped):
             result_lines.append(line)
             continue
 
-        # 이미 충분히 짧으면 그대로
-        if len(line) <= max_length:
-            result_lines.append(line)
-            continue
-
-        # 길면 어절(공백) 단위로 다시 쌓아가며 max_length 넘기 직전에 줄바꿈
-        words = line.split(" ")
-        current = ""
-        for word in words:
-            candidate = f"{current} {word}".strip() if current else word
-            if len(candidate) > max_length and current:
-                result_lines.append(current)
-                current = word
-            else:
-                current = candidate
-        if current:
-            result_lines.append(current)
+        sentences = [s.strip() for s in SENTENCE_SPLIT_PATTERN.split(stripped) if s.strip()]
+        result_lines.extend(sentences if sentences else [stripped])
 
     return "\n".join(result_lines)
 

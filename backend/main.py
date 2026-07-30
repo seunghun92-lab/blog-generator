@@ -11,7 +11,13 @@ from dotenv import load_dotenv
 
 from docx_parser import extract_guide_text
 from prompts import build_system_prompt, build_user_prompt, CHAR_COUNT_RANGE
-from response_parser import parse_gpt_response, split_photo_markers, force_line_breaks
+from response_parser import (
+    parse_gpt_response,
+    split_photo_markers,
+    force_line_breaks,
+    format_phone_number,
+    format_hashtags,
+)
 
 load_dotenv()
 
@@ -176,15 +182,17 @@ async def generate_post(
 
     fixed_body = force_line_breaks(parsed["본문"])
     body_segments = split_photo_markers(fixed_body)
+    phone = format_phone_number(parsed["전화번호"])
+    hashtags = format_hashtags(parsed["해시태그"])
 
     try:
         supabase.table("post").insert({
             "제목": parsed["제목"],
             "본문": fixed_body,
             "주소": parsed["주소"],
-            "전화번호": parsed["전화번호"],
+            "전화번호": phone,
             "링크": parsed["링크"],
-            "해시태그": parsed["해시태그"],
+            "해시태그": hashtags,
             "가이드파일명": guide_filename,
         }).execute()
     except Exception as e:
@@ -195,9 +203,9 @@ async def generate_post(
         "본문": fixed_body,
         "본문_세그먼트": body_segments,
         "주소": parsed["주소"],
-        "전화번호": parsed["전화번호"],
+        "전화번호": phone,
         "링크": parsed["링크"],
-        "해시태그": parsed["해시태그"],
+        "해시태그": hashtags,
         "raw": raw_text,
     }
 

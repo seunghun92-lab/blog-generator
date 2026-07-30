@@ -2,6 +2,7 @@
 GPT 응답 텍스트를 [제목]/[본문]/[주소]/[전화번호]/[링크]/[해시태그] 6개로 분리하는 모듈
 """
 import re
+import random
 
 SECTION_ORDER = ["제목", "본문", "주소", "전화번호", "링크", "해시태그"]
 SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[.!?])\s+")
@@ -50,6 +51,44 @@ def force_line_breaks(text: str) -> str:
         result_lines.extend(sentences if sentences else [stripped])
 
     return "\n".join(result_lines)
+
+
+def format_phone_number(phone: str) -> str:
+    """
+    전화번호 앞에 tel: 을 강제로 붙인다. GPT가 이미 tel:을 붙였거나
+    공백/대소문자가 섞여 있어도 한 번만 깔끔하게 붙도록 처리.
+    """
+    cleaned = re.sub(r"^tel:\s*", "", phone.strip(), flags=re.IGNORECASE)
+    if not cleaned:
+        return ""
+    return f"tel:{cleaned}"
+
+
+def format_hashtags(hashtags: str) -> str:
+    """
+    해시태그를 한 줄에 3~4개씩 랜덤하게 묶어서 줄바꿈한다.
+    (GPT에게 맡기면 개수를 정확히 못 지키는 경우가 있어서 코드로 강제)
+    """
+    tags = hashtags.split()
+    if not tags:
+        return hashtags
+
+    lines = []
+    i = 0
+    n = len(tags)
+    while i < n:
+        remaining = n - i
+        if remaining <= 4:
+            chunk_size = remaining
+        else:
+            chunk_size = random.randint(3, 4)
+            # 다음 줄에 1~2개만 남아 어중간해지면, 이번 줄에 나머지를 다 몰아준다
+            if 0 < remaining - chunk_size < 3:
+                chunk_size = remaining
+        lines.append(" ".join(tags[i:i + chunk_size]))
+        i += chunk_size
+
+    return "\n".join(lines)
 
 
 def split_photo_markers(body_text: str) -> list[dict]:

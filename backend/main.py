@@ -10,7 +10,7 @@ from supabase import create_client
 from dotenv import load_dotenv
 
 from docx_parser import extract_guide_text
-from prompt_builder import build_system_prompt, build_user_prompt, CHAR_COUNT_RANGE
+from prompts import build_system_prompt, build_user_prompt, CHAR_COUNT_RANGE
 from response_parser import parse_gpt_response, split_photo_markers, force_line_breaks
 
 load_dotenv()

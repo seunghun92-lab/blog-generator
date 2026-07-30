@@ -8,6 +8,10 @@
 
 ## 구조
 - `backend/` - FastAPI 서버 (가이드 docx 파싱 + GPT 호출 + Supabase 기록 저장)
+  - `prompts/` - GPT 프롬프트 관련 코드만 모아둔 패키지
+    - `system_prompt.py` - 말투/형식 등 고정 규칙 (시스템 프롬프트)
+    - `labels.py` - 프로필/스타일 옵션 값 → 설명 문구 매핑
+    - `user_prompt.py` - 가이드 텍스트 + 옵션을 조합해 유저 프롬프트 생성
 - `frontend/` - React(Vite) 웹앱 (업로드 UI + 결과 표시 + 생성 기록 조회)
 - `vercel.json` (레포 루트) - Vercel 배포용 빌드 설정. 모노레포라 Root Directory를 프로젝트 설정에서 지정하는 대신 이 파일로 `frontend`를 직접 빌드하도록 우회함
 

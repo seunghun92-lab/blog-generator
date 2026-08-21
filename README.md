@@ -2,9 +2,11 @@
 
 가이드(.docx) + 사진 개수만 넣으면 GPT-4o가 네이버 블로그 후기글 형태(제목/본문/주소/전화번호/링크/해시태그)로 써주는 개인용 도구.
 
-## 배포된 주소 (기존 Vercel + Render 방식, Docker 전환 후에는 사용 안 함)
-- 프론트: https://blog-indol-one-62.vercel.app/
-- 백엔드: https://blog-generator-vo6d.onrender.com
+## 배포된 주소 (Render, Docker 런타임, Blueprint로 관리)
+- 프론트: https://blog-generator-frontend-egvb.onrender.com
+- 백엔드: https://blog-generator-backend-lg3x.onrender.com
+
+> 예전에는 Vercel(프론트) + Render(백엔드, non-Docker)로 따로 배포했었는데, 지금은 Render 하나로 통합했다. 예전 Vercel 프로젝트와 예전 Render 백엔드 서비스는 삭제함.
 
 ## 구조
 - `backend/` - FastAPI 서버 (가이드 docx 파싱 + GPT 호출 + Supabase 기록 저장)
@@ -17,7 +19,8 @@
   - `Dockerfile` - 프론트 컨테이너 이미지 (node로 빌드 → nginx로 정적 서빙)
   - `nginx.conf` - 정적 파일 서빙 + `/api/*` 요청을 backend 컨테이너로 프록시
 - `docker-compose.yml` (레포 루트) - backend + frontend를 한 번에 빌드/실행
-- `vercel.json` (레포 루트) - (레거시) 기존 Vercel 배포용 빌드 설정. Docker 전환 후에는 더 이상 사용하지 않음
+- `render.yaml` (레포 루트) - Render Blueprint. backend/frontend 두 서비스를 Docker 런타임으로 한 번에 정의
+- `vercel.json` (레포 루트) - (사용 안 함) 예전 Vercel 배포용 빌드 설정. Vercel 프로젝트 자체를 삭제했으므로 이 파일도 참고용으로만 남겨둠, 지워도 무방
 
 ## 글 생성 방식 (핵심 로직)
 - **말투**: "존댓말감상반말" 하나로 고정 (다양한 어미 + 물결표(~)/느낌표(!) 아주 가끔 섞음). 프론트엔드에 말투 선택 UI 없음
@@ -94,12 +97,12 @@ docker compose up --build
 
 VPS를 직접 운영하는 대신, backend/frontend 둘 다 Render에 Docker 런타임으로 올린다. Render는 카드 등록 없이 무료로 쓸 수 있고, git 연결만 해두면 push할 때마다 자동으로 재배포된다 (별도 CI 파이프라인 불필요). 레포 루트의 `render.yaml`이 두 서비스를 한 번에 정의해둔 Blueprint.
 
-**최초 설정 (한 번만)**
+**최초 설정 (한 번만, 이미 완료된 상태 - 나중에 통째로 다시 만들어야 할 때 참고용)**
 1. Render 대시보드 → New → **Blueprint** → 이 레포 선택
 2. `render.yaml`을 인식해서 `blog-generator-backend`, `blog-generator-frontend` 두 서비스가 자동으로 생성됨
 3. backend 서비스의 환경변수에 `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY` 값을 채워넣음 (`sync: false`라 대시보드에서 직접 입력해야 함)
-4. backend 서비스가 배포되면 나오는 실제 URL을 확인해서, `render.yaml`의 frontend `VITE_API_BASE_URL` 값을 그 URL로 맞춰준 뒤 다시 push (최초 1회만 필요 - 이후엔 URL이 안 바뀌는 한 그대로 유지됨)
-5. 기존 Vercel 프로젝트는 GitHub 연결을 끊어서(Settings → Git) 더 이상 쓸데없이 빌드가 도는 걸 막는다
+4. backend 서비스가 배포되면 나오는 실제 URL을 확인해서, `render.yaml`의 frontend `VITE_API_BASE_URL` 값을 그 URL로 맞춰준 뒤 다시 push (URL에 Render가 붙이는 랜덤 접미사가 포함되므로 반드시 실제 값 확인 후 반영해야 함)
+5. 예전 Vercel 프로젝트, 예전 Render 백엔드 서비스는 삭제 (더 이상 안 씀)
 
 **이후로는**
 - `git push`만 하면 backend/frontend 둘 다 Render가 알아서 재배포 (대시보드 하나만 확인하면 됨)

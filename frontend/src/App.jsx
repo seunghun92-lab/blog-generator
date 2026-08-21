@@ -6,6 +6,15 @@ import {
 
 const TONE = "존댓말감상반말";
 import { parseGuideFile, generatePost, getHistory, getPost } from "./api";
+import { supabase } from "./supabaseClient";
+import LoginGate from "./LoginGate";
+
+// 구글 계정에서 표시용 이름을 뽑아낸다 (없으면 이메일 앞부분으로 대체)
+function getDisplayName(user) {
+  if (!user) return "";
+  const meta = user.user_metadata || {};
+  return meta.full_name || meta.name || user.email?.split("@")[0] || "";
+}
 
 const RESULT_FIELDS = [
   { key: "제목", label: "제목" },
@@ -53,6 +62,15 @@ function CopyBox({ label, content }) {
   );
 }
 
+function AuthBar({ author, onLogout }) {
+  return (
+    <div className="auth-bar">
+      <span className="auth-bar-name">{author}님</span>
+      <button className="auth-bar-logout" onClick={onLogout}>로그아웃</button>
+    </div>
+  );
+}
+
 function DropZone({ accept, multiple, onFiles, children }) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef(null);
@@ -89,6 +107,21 @@ function DropZone({ accept, multiple, onFiles, children }) {
 
 export default function App() {
   const [view, setView] = useState("form"); // form | result | history | historyDetail
+
+  // 로그인 세션 (undefined: 확인 중, null: 미로그인, object: 로그인됨)
+  const [session, setSession] = useState(undefined);
+  const [historyAuthorFilter, setHistoryAuthorFilter] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const author = getDisplayName(session?.user);
+  const handleLogout = () => supabase.auth.signOut();
 
   // 입력
   const [guideFile, setGuideFile] = useState(null);
@@ -172,6 +205,7 @@ export default function App() {
         profile: { age, gender, job, situation },
         style: { post_type: postType, tone: TONE, structure },
         guideFilename: guideFile?.name || "",
+        author,
       });
       setResult(data);
       setView("result");
@@ -210,10 +244,21 @@ export default function App() {
     return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
 
+  // ───── 로그인 세션 확인 중 ─────
+  if (session === undefined) {
+    return <div className="session-loading" />;
+  }
+
+  // ───── 미로그인 ─────
+  if (session === null) {
+    return <LoginGate />;
+  }
+
   // ───── 기록 상세 뷰 ─────
   if (view === "historyDetail" && selectedPost) {
     return (
       <div className="app">
+        <AuthBar author={author} onLogout={handleLogout} />
         <header className="app-header">
           <button className="back-btn" onClick={() => setView("history")}>← 기록으로</button>
           <h1>{selectedPost.제목 || "제목 없음"}</h1>
@@ -232,6 +277,7 @@ export default function App() {
   if (view === "history") {
     return (
       <div className="app">
+        <AuthBar author={author} onLogout={handleLogout} />
         <header className="app-header">
           <button className="back-btn" onClick={() => setView("form")}>← 돌아가기</button>
           <h1>생성 기록</h1>
@@ -240,14 +286,43 @@ export default function App() {
         {!historyLoading && history.length === 0 && (
           <p className="hint" style={{textAlign:"center"}}>아직 생성한 글이 없어요.</p>
         )}
-        <div className="history-list">
-          {history.map((item) => (
-            <div key={item.id} className="history-item" onClick={() => handleSelectPost(item.id)}>
-              <div className="history-title">{item.제목 || "제목 없음"}</div>
-              <div className="history-meta">{item.가이드파일명 && <span>{item.가이드파일명}</span>}<span>{formatDate(item.created_at)}</span></div>
-            </div>
-          ))}
-        </div>
+        {(() => {
+          const authors = [...new Set(history.map((h) => h.작성자).filter(Boolean))];
+          const filtered = historyAuthorFilter
+            ? history.filter((h) => h.작성자 === historyAuthorFilter)
+            : history;
+          return (
+            <>
+              {authors.length > 1 && (
+                <div className="author-filter">
+                  <button
+                    className={`author-chip ${historyAuthorFilter === "" ? "active" : ""}`}
+                    onClick={() => setHistoryAuthorFilter("")}
+                  >전체</button>
+                  {authors.map((a) => (
+                    <button
+                      key={a}
+                      className={`author-chip ${historyAuthorFilter === a ? "active" : ""}`}
+                      onClick={() => setHistoryAuthorFilter(a)}
+                    >{a}</button>
+                  ))}
+                </div>
+              )}
+              <div className="history-list">
+                {filtered.map((item) => (
+                  <div key={item.id} className="history-item" onClick={() => handleSelectPost(item.id)}>
+                    <div className="history-title">{item.제목 || "제목 없음"}</div>
+                    <div className="history-meta">
+                      {item.작성자 && <span className="history-author">{item.작성자}</span>}
+                      {item.가이드파일명 && <span>{item.가이드파일명}</span>}
+                      <span>{formatDate(item.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </div>
     );
   }
@@ -256,6 +331,7 @@ export default function App() {
   if (view === "result" && result) {
     return (
       <div className="app">
+        <AuthBar author={author} onLogout={handleLogout} />
         <header className="app-header">
           <button className="back-btn" onClick={() => setView("form")}>← 다시 만들기</button>
           <h1>생성 결과</h1>
@@ -274,6 +350,7 @@ export default function App() {
   // ───── 입력 뷰 ─────
   return (
     <div className="app">
+      <AuthBar author={author} onLogout={handleLogout} />
       <header className="app-header">
         <h1>블로그 글 생성기</h1>
         <p>포스팅 가이드(.docx)랑 사진만 넣으면, 글을 자동으로 써드려요.</p>

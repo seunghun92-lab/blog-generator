@@ -18,7 +18,7 @@ export async function parseGuideFile(file) {
   return res.json();
 }
 
-export async function generatePost({ guideText, photoCount, charCount, profile, style, guideFilename }) {
+export async function generatePost({ guideText, photoCount, charCount, profile, style, guideFilename, author }) {
   const formData = new FormData();
   formData.append("guide_text", guideText);
   formData.append("photo_count", photoCount);
@@ -26,6 +26,7 @@ export async function generatePost({ guideText, photoCount, charCount, profile, 
   formData.append("profile_json", JSON.stringify(profile));
   formData.append("style_json", JSON.stringify(style));
   formData.append("guide_filename", guideFilename || "");
+  formData.append("author", author || "");
 
   const res = await fetch(`${API_BASE}/api/generate`, {
     method: "POST",

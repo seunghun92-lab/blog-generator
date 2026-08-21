@@ -15,6 +15,68 @@ body {
   padding: 32px 16px 80px;
 }
 
+.session-loading {
+  min-height: 100vh;
+  background: #f7f5f0;
+}
+
+.auth-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 0 4px;
+}
+
+.auth-bar-name {
+  font-size: 12.5px;
+  color: #8a8a82;
+}
+
+.auth-bar-logout {
+  padding: 5px 12px;
+  background: white;
+  border: 1px solid #e8e4d8;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #4a4a44;
+  cursor: pointer;
+}
+
+.auth-bar-logout:hover {
+  background: #f7f5f0;
+}
+
+.author-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.author-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #e8e4d8;
+  background: white;
+  font-size: 12.5px;
+  color: #6b6b66;
+  cursor: pointer;
+}
+
+.author-chip.active {
+  background: #2d3b2d;
+  border-color: #2d3b2d;
+  color: white;
+}
+
+.history-author {
+  font-weight: 700;
+  color: #d68f3f;
+}
+
 .app-header {
   text-align: center;
   margin-bottom: 32px;

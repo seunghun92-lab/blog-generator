@@ -79,6 +79,7 @@ async def generate_post(
     profile_json: str = Form("{}"),
     style_json: str = Form("{}"),
     guide_filename: str = Form(""),
+    author: str = Form(""),
 ):
     try:
         profile = json.loads(profile_json)
@@ -194,6 +195,7 @@ async def generate_post(
             "링크": parsed["링크"],
             "해시태그": hashtags,
             "가이드파일명": guide_filename,
+            "작성자": author,
         }).execute()
     except Exception as e:
         print(f"Supabase 저장 실패 (무시): {e}")
@@ -213,7 +215,7 @@ async def generate_post(
 @app.get("/api/history")
 async def get_history():
     try:
-        result = supabase.table("post").select("id, created_at, 제목, 가이드파일명").order("created_at", desc=True).limit(50).execute()
+        result = supabase.table("post").select("id, created_at, 제목, 가이드파일명, 작성자").order("created_at", desc=True).limit(50).execute()
         return {"history": result.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"기록 조회 실패: {str(e)}")

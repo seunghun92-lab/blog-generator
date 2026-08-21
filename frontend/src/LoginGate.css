@@ -1,0 +1,217 @@
+/* 로그인 게이트 화면 전용 스타일 (독립적인 다크/앰버 톤 - 본문 앱의 베이지 톤과는 별개) */
+
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("./assets/fonts/InstrumentSerif-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.login-hero {
+  --ink: #0b1330;
+  --bg-warm: #1c140f;
+  --bg-warm-2: #120d0a;
+  --amber: #f4a261;
+  --amber-deep: #c1440e;
+  --text: #f7f1e8;
+  --text-dim: rgba(247, 241, 232, 0.72);
+
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  background: var(--bg-warm);
+  color: var(--text);
+  font-family: "Pretendard", -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 왼쪽: 사진 ── */
+.login-photo {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.login-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 30%;
+  filter: saturate(1.05) contrast(1.03);
+}
+
+.login-photo::after {
+  /* 사진 오른쪽 가장자리가 어두운 패널로 자연스럽게 스며들게 */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(28, 20, 15, 0) 58%, var(--bg-warm) 100%);
+}
+
+.login-photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 7, 5, 0.55) 0%, rgba(10, 7, 5, 0) 22%, rgba(10, 7, 5, 0) 70%, rgba(10, 7, 5, 0.5) 100%);
+  z-index: 1;
+}
+
+/* ── 오른쪽: 텍스트 패널 ── */
+.login-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 56px;
+  background:
+    radial-gradient(120% 90% at 0% 30%, rgba(244, 162, 97, 0.16), transparent 60%),
+    var(--bg-warm);
+}
+
+.login-eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin: 0 0 18px;
+}
+
+.login-headline {
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: clamp(42px, 5.4vw, 66px);
+  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--text);
+}
+
+.login-headline-sub {
+  display: block;
+  font-size: 0.52em;
+  font-weight: 400;
+  font-style: italic;
+  margin-top: 10px;
+  color: var(--text-dim);
+}
+
+.login-sub {
+  margin: 22px 0 0;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  max-width: 30em;
+  word-break: keep-all;
+}
+
+.login-cta {
+  margin-top: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  border: none;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  width: fit-content;
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.7);
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.login-cta:hover {
+  background: #f4f2ea;
+  transform: translateY(-1px);
+}
+
+.login-cta:disabled {
+  opacity: 0.7;
+  cursor: default;
+  transform: none;
+}
+
+.login-cta .g-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.login-footnote {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.login-error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #ffb4a8;
+}
+
+.login-divider {
+  margin: 34px 0 20px;
+  height: 1px;
+  background: rgba(247, 241, 232, 0.14);
+  max-width: 30em;
+}
+
+.login-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 30em;
+}
+
+.login-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(247, 241, 232, 0.16);
+  background: rgba(247, 241, 232, 0.04);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.login-feature .ic {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(244, 162, 97, 0.18);
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex: none;
+}
+
+@media (max-width: 860px) {
+  .login-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .login-photo {
+    min-height: 42vh;
+  }
+
+  .login-photo::after {
+    background: linear-gradient(180deg, rgba(28, 20, 15, 0) 60%, var(--bg-warm) 100%);
+  }
+
+  .login-content {
+    padding: 40px 24px 56px;
+  }
+}

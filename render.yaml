@@ -28,3 +28,9 @@ services:
       # 백엔드 서비스의 실제 Render URL로 채워야 함 (빌드 시점에 Vite가 값을 박아넣음)
       - key: VITE_API_BASE_URL
         value: https://blog-generator-backend-lg3x.onrender.com
+      # Supabase 프로젝트 URL (Settings > API > Project URL)
+      - key: VITE_SUPABASE_URL
+        sync: false
+      # 반드시 anon/public 키만 (service_role 키 절대 금지 - 프론트 번들에 그대로 노출됨)
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false

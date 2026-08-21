@@ -18,6 +18,8 @@
 - `frontend/` - React(Vite) 웹앱 (업로드 UI + 결과 표시 + 생성 기록 조회)
   - `Dockerfile` - 프론트 컨테이너 이미지 (node로 빌드 → nginx로 정적 서빙)
   - `nginx.conf` - 정적 파일 서빙 + `/api/*` 요청을 backend 컨테이너로 프록시
+  - `src/supabaseClient.js` - 구글 로그인 전용 Supabase 클라이언트 (anon key만 사용)
+  - `src/LoginGate.jsx`, `src/LoginGate.css` - 로그인 게이트 화면 (구글 로그인 안 하면 이 화면만 보임)
 - `docker-compose.yml` (레포 루트) - backend + frontend를 한 번에 빌드/실행
 - `render.yaml` (레포 루트) - Render Blueprint. backend/frontend 두 서비스를 Docker 런타임으로 한 번에 정의
 - `vercel.json` (레포 루트) - (사용 안 함) 예전 Vercel 배포용 빌드 설정. Vercel 프로젝트 자체를 삭제했으므로 이 파일도 참고용으로만 남겨둠, 지워도 무방
@@ -30,7 +32,27 @@
   2. 그래도 부족하면 처음부터 다시 안 쓰고, 기존 본문 뒤에 **자연스럽게 이어쓰기**를 최대 2번 요청해서 분량을 채움 (`main.py`의 `/api/generate`)
 
 ## DB
-**Supabase**를 사용합니다. `post` 테이블에 생성 기록(제목/본문/주소/전화번호/링크/해시태그/가이드파일명, id, created_at)을 저장하고, `/api/history`, `/api/history/{id}`에서 조회함. Supabase 저장이 실패해도 글 생성 자체는 실패하지 않도록 처리되어 있음(에러 무시하고 진행).
+**Supabase**를 사용합니다. `post` 테이블에 생성 기록(제목/본문/주소/전화번호/링크/해시태그/가이드파일명/**작성자**, id, created_at)을 저장하고, `/api/history`, `/api/history/{id}`에서 조회함. Supabase 저장이 실패해도 글 생성 자체는 실패하지 않도록 처리되어 있음(에러 무시하고 진행).
+
+`작성자` 컬럼은 기본 테이블에 없으니 Supabase 대시보드 → SQL Editor에서 한 번 실행해서 추가해야 함:
+```sql
+ALTER TABLE post ADD COLUMN "작성자" text;
+```
+
+## 구글 로그인
+여러 명이 같이 쓰다 보니 기록이 다 섞여서, 구글 로그인으로 누가 만든 글인지 구분한다. 실제 접근 제어(보안) 목적이 아니라 **단순 구분/정리용** - 로그인한 구글 계정 이름이 자동으로 "작성자"로 태그되고, 생성 기록 화면에서 작성자별로 필터링해서 볼 수 있다.
+
+- 로그인 안 하면 `LoginGate.jsx` 화면만 보이고 그 뒤 앱은 아예 안 보임 (프론트 게이트, 백엔드 API 자체를 막는 건 아님)
+- Supabase Auth의 Google Provider를 그대로 사용 (자체 회원가입/비밀번호 로직 없음)
+
+**최초 설정 (한 번만)**
+1. [Google Cloud Console](https://console.cloud.google.com/) → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID 만들기 (애플리케이션 유형: 웹 애플리케이션)
+   - 승인된 리디렉션 URI: `https://<supabase-project-ref>.supabase.co/auth/v1/callback` (Supabase 대시보드 Authentication → Providers → Google 화면에 정확한 값이 표시됨)
+2. Supabase 대시보드 → Authentication → Providers → **Google** 활성화 → 위에서 발급받은 Client ID / Client Secret 입력
+3. Supabase 대시보드 → Authentication → URL Configuration
+   - Site URL: `https://blog-generator-frontend-egvb.onrender.com`
+   - Additional Redirect URLs에 로컬 개발용으로 `http://localhost:5173` 추가
+4. 프론트 환경변수에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` 설정 (Settings → API에서 확인. **anon public 키만** 쓸 것 — service_role 키는 브라우저에 그대로 노출되므로 절대 금지)
 
 ## 로컬 실행 방법
 

@@ -1,0 +1,30 @@
+# Render Blueprint: backend + frontend를 Docker로 한 번에 정의
+# Render 대시보드 > New > Blueprint 에서 이 레포를 선택하면 아래 서비스 2개가 한 번에 생성됨.
+# 이후로는 git push할 때마다 두 서비스 모두 자동 재배포됨 (Render 기본 동작, 별도 CI 불필요)
+services:
+  - type: web
+    name: blog-generator-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false # Blueprint 생성 시 대시보드에서 직접 입력
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+
+  - type: web
+    name: blog-generator-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    autoDeploy: true
+    envVars:
+      # 백엔드 서비스의 실제 Render URL로 채워야 함 (빌드 시점에 Vite가 값을 박아넣음)
+      - key: VITE_API_BASE_URL
+        value: https://blog-generator-backend.onrender.com

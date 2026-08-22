@@ -1,20 +1,9 @@
 import { useEffect, useState } from "react";
-import ResultBox from "../components/ResultBox";
-import PhotoPreview from "../components/PhotoPreview";
+import ArchiveList from "./archive/ArchiveList";
+import PostModal from "./archive/PostModal";
 import { getHistory, getPost, deletePost, updatePost } from "../api";
 
 const PAGE_SIZE = 3;
-
-const STATUS_LABEL = { pending: "생성 중", failed: "실패" };
-
-const EDIT_FIELDS = [
-  { key: "제목", label: "제목", multiline: false },
-  { key: "본문", label: "본문", multiline: true },
-  { key: "주소", label: "주소", multiline: false },
-  { key: "전화번호", label: "전화번호", multiline: false },
-  { key: "링크", label: "링크", multiline: false },
-  { key: "해시태그", label: "해시태그", multiline: true },
-];
 
 export default function Archive({ showToast }) {
   const [history, setHistory] = useState([]);
@@ -57,6 +46,11 @@ export default function Archive({ showToast }) {
   const currentPage = Math.min(page, totalPages - 1);
   const pageItems = filtered.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
 
+  const handleAuthorFilterChange = (a) => {
+    setAuthorFilter(a);
+    setPage(0);
+  };
+
   const openItem = async (item) => {
     if (item.status !== "done") return;
     setModalLoading(true);
@@ -93,6 +87,10 @@ export default function Archive({ showToast }) {
     setEditFields(null);
   };
 
+  const changeEditField = (key, value) => {
+    setEditFields((prev) => ({ ...prev, [key]: value }));
+  };
+
   const saveEdit = async () => {
     setSavingEdit(true);
     try {
@@ -110,8 +108,7 @@ export default function Archive({ showToast }) {
     }
   };
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation();
+  const handleDeleteItem = async (id) => {
     if (!window.confirm("이 글을 삭제할까요? 되돌릴 수 없어요.")) return;
     try {
       await deletePost(id);
@@ -129,109 +126,33 @@ export default function Archive({ showToast }) {
         <p>지금까지 저장한 글을 한 곳에서 확인하세요</p>
       </div>
 
-      {authors.length > 1 && (
-        <div className="author-filter">
-          <button className={`author-chip ${authorFilter === "" ? "active" : ""}`} onClick={() => { setAuthorFilter(""); setPage(0); }}>전체</button>
-          {authors.map((a) => (
-            <button key={a} className={`author-chip ${authorFilter === a ? "active" : ""}`} onClick={() => { setAuthorFilter(a); setPage(0); }}>{a}</button>
-          ))}
-        </div>
-      )}
+      <ArchiveList
+        loading={loading}
+        filtered={filtered}
+        pageItems={pageItems}
+        authors={authors}
+        authorFilter={authorFilter}
+        onAuthorFilterChange={handleAuthorFilterChange}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        onOpenItem={openItem}
+        onDeleteItem={handleDeleteItem}
+      />
 
-      {loading && <p className="hint">불러오는 중...</p>}
-      {!loading && filtered.length === 0 && <p className="hint">아직 저장한 글이 없어요.</p>}
-
-      <div className="archive-list">
-        {pageItems.map((item) => {
-          const isPending = item.status === "pending";
-          const isFailed = item.status === "failed";
-          return (
-            <div
-              key={item.id}
-              className={`archive-item ${isPending ? "is-pending" : ""} ${isFailed ? "is-failed" : ""}`}
-              onClick={() => openItem(item)}
-            >
-              <div className="archive-main">
-                <div className="archive-title">{isPending ? "생성 중인 글이에요" : (item.제목 || "제목 없음")}</div>
-                <div className="archive-meta">
-                  {item.작성자 && <span className="archive-author">{item.작성자}</span>}
-                  {item.가이드파일명 && <span>{item.가이드파일명}</span>}
-                </div>
-              </div>
-              <div className="archive-row">
-                {(isPending || isFailed) && (
-                  <span className={`status-pill ${item.status}`}><span className="dot" />{STATUS_LABEL[item.status]}</span>
-                )}
-                {!isPending && <span className="status-pill done">완료</span>}
-                <button type="button" className="archive-delete" onClick={(e) => handleDelete(e, item.id)} title="삭제">×</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {filtered.length > PAGE_SIZE && (
-        <div className="steps" style={{ marginTop: 22, marginBottom: 0 }}>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <div className="step-dot-wrap" key={i}>
-              <button className={`step-dot ${i === currentPage ? "current" : ""}`} onClick={() => setPage(i)}>{i + 1}</button>
-              {i < totalPages - 1 && <div className="step-line" />}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {selectedPost && (
-        <div className="archive-modal-overlay active" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-          <div className="archive-modal">
-            <button type="button" className="archive-modal-close" onClick={closeModal}>×</button>
-
-            {!editMode ? (
-              <>
-                <h2>{selectedPost.제목 || "제목 없음"}</h2>
-                <p className="archive-modal-meta">{selectedPost.작성자} · {selectedPost.가이드파일명}</p>
-                <PhotoPreview segments={selectedPost.본문_세그먼트} body={selectedPost.본문} />
-                <ResultBox label="주소" content={selectedPost.주소} />
-                <ResultBox label="전화번호" content={selectedPost.전화번호} />
-                <ResultBox label="링크" content={selectedPost.링크} />
-                <ResultBox label="해시태그" content={selectedPost.해시태그} />
-                <div className="wiz-nav">
-                  <button className="btn-back" onClick={startEdit}>수정하기</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2>수정하기</h2>
-                {EDIT_FIELDS.map((f) => (
-                  <div key={f.key} className="edit-field">
-                    <label>{f.label}</label>
-                    {f.multiline ? (
-                      <textarea
-                        rows={f.key === "본문" ? 10 : 3}
-                        value={editFields[f.key]}
-                        onChange={(e) => setEditFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={editFields[f.key]}
-                        onChange={(e) => setEditFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                      />
-                    )}
-                  </div>
-                ))}
-                <div className="wiz-nav">
-                  <button className="btn-back" onClick={cancelEdit} disabled={savingEdit}>취소</button>
-                  <button className="btn-next" onClick={saveEdit} disabled={savingEdit}>
-                    {savingEdit ? "저장하는 중..." : "저장"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
       {modalLoading && <p className="hint">불러오는 중...</p>}
+
+      <PostModal
+        post={selectedPost}
+        editMode={editMode}
+        editFields={editFields}
+        savingEdit={savingEdit}
+        onClose={closeModal}
+        onStartEdit={startEdit}
+        onCancelEdit={cancelEdit}
+        onEditFieldChange={changeEditField}
+        onSaveEdit={saveEdit}
+      />
     </div>
   );
 }

@@ -1,19 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import DropZone from "../components/DropZone";
-import ResultBox from "../components/ResultBox";
-import PhotoPreview from "../components/PhotoPreview";
-import MiniGame from "../components/MiniGame";
-import { CHAR_COUNT_OPTIONS } from "../options";
+import GuideStep from "./detail/GuideStep";
+import PhotoStep from "./detail/PhotoStep";
+import ResultView from "./detail/ResultView";
 import { parseGuideFile, generatePreview, savePost } from "../api";
 import { getRecentGuides, saveRecentGuide, removeRecentGuide } from "../recentGuides";
-
-// 글자수별 대략적인 예상 소요시간 (GPT 호출 1~5번, 재시도/이어쓰기 포함될 수 있어서 범위로 안내)
-const ETA_TEXT = {
-  800: "약 15~25초",
-  1200: "약 20~35초",
-  1600: "약 25~45초",
-  2000: "약 30~60초",
-};
 
 export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const [step, setStep] = useState(1);
@@ -22,6 +12,7 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const [guideFile, setGuideFile] = useState(null);
   const [guideText, setGuideText] = useState("");
   const [guideLoading, setGuideLoading] = useState(false);
+  const [recentGuides, setRecentGuides] = useState(() => getRecentGuides());
 
   // 2단계: 사진 + 글 분량
   const [photos, setPhotos] = useState([]);
@@ -35,7 +26,6 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const [saved, setSaved] = useState(false);
   const [progress, setProgress] = useState(0);
   const progressTimerRef = useRef(null);
-  const [recentGuides, setRecentGuides] = useState(() => getRecentGuides());
 
   useEffect(() => {
     // 언마운트 시 진행률 타이머 정리
@@ -204,132 +194,51 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
           </div>
 
           {step === 1 && (
-            <div>
-              <DropZone accept=".docx" multiple={false} onFiles={handleGuideFiles}>
-                <div className="zone-main">{guideFile ? guideFile.name : "가이드 파일을 여기에 끌어다 놓으세요"}</div>
-                <div className="zone-sub">.docx 파일만 가능</div>
-                <span className="zone-btn">파일 선택</span>
-              </DropZone>
-              {guideLoading && <p className="hint">가이드 읽는 중...</p>}
-              {guideFile && !guideLoading && (
-                <div className="file-count">
-                  <span><b>1개</b> 선택됨 · {guideFile.name}</span>
-                  <button className="clear-all" onClick={clearGuide}>삭제</button>
-                </div>
-              )}
-              {recentGuides.length > 0 && (
-                <div className="recent-guides">
-                  <p className="recent-guides-label">최근 가이드</p>
-                  <div className="recent-guides-list">
-                    {recentGuides.map((g) => (
-                      <button type="button" key={g.name} className="recent-guide-chip" onClick={() => pickRecentGuide(g)}>
-                        <span className="recent-guide-name">{g.name}</span>
-                        <span className="recent-guide-x" onClick={(e) => deleteRecentGuide(e, g.name)}>×</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {errorMsg && <p className="error-text">{errorMsg}</p>}
-              <div className="wiz-nav">
-                <button className="btn-next" style={{ flex: 1 }} onClick={() => goStep(2)} disabled={!guideText}>
-                  다음 · 사진
-                </button>
-              </div>
-            </div>
+            <GuideStep
+              guideFile={guideFile}
+              guideText={guideText}
+              guideLoading={guideLoading}
+              errorMsg={errorMsg}
+              recentGuides={recentGuides}
+              onFiles={handleGuideFiles}
+              onClear={clearGuide}
+              onPickRecent={pickRecentGuide}
+              onDeleteRecent={deleteRecentGuide}
+              onNext={() => goStep(2)}
+            />
           )}
 
           {step === 2 && (
-            <div>
-              <DropZone accept="image/*" multiple onFiles={handlePhotoFiles}>
-                <div className="zone-main">사진을 여기에 끌어다 놓으세요</div>
-                <div className="zone-sub">여러 장 한번에 선택 가능 (첫 장 = 대표이미지)</div>
-                <span className="zone-btn">사진 선택</span>
-              </DropZone>
-              {photos.length > 0 && (
-                <div className="file-count">
-                  <span><b>{photos.length}개</b> 선택됨</span>
-                  <button className="clear-all" onClick={clearPhotos}>전체 삭제</button>
-                </div>
-              )}
-              <div className="file-list">
-                {photos.map((p, i) => (
-                  <div key={p.id} className="file-row">
-                    <img className="file-thumb" src={p.url} alt={`사진${i + 1}`} />
-                    <span className="file-name">{i === 0 ? "대표 사진" : `사진 ${i + 1}`} · {p.file.name}</span>
-                    <button type="button" className="file-remove" onClick={() => removePhoto(p.id)}>×</button>
-                  </div>
-                ))}
-              </div>
-              <div className="opt-row" style={{ marginTop: 8 }}>
-                <span className="label">글 분량</span>
-                <select value={charCount} onChange={(e) => setCharCount(Number(e.target.value))}>
-                  {CHAR_COUNT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-              {errorMsg && <p className="error-text">{errorMsg}</p>}
-              <div className="wiz-nav">
-                <button className="btn-back" onClick={() => goStep(1)}>이전</button>
-                <button className="btn-next" onClick={runGenerate} disabled={photos.length === 0}>
-                  생성 시작하기
-                </button>
-              </div>
-            </div>
+            <PhotoStep
+              photos={photos}
+              charCount={charCount}
+              errorMsg={errorMsg}
+              onFiles={handlePhotoFiles}
+              onRemove={removePhoto}
+              onClearAll={clearPhotos}
+              onCharCountChange={setCharCount}
+              onBack={() => goStep(1)}
+              onGenerate={runGenerate}
+            />
           )}
         </>
       )}
 
-      {phase === "loading" && (
-        <div className="result-loading">
-          <p className="progress-pct">{Math.round(progress)}%</p>
-          <div className="progress-bar-track">
-            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <p className="progress-eta">글을 쓰고 있어요 · 예상 소요시간 {ETA_TEXT[charCount] || "약 20~40초"}</p>
-          <MiniGame />
-        </div>
-      )}
-
-      {phase === "error" && (
-        <div className="done-screen">
-          <div className="done-badge" style={{ background: "#fdecea", color: "#c0392b" }}>!</div>
-          <h2>생성에 실패했어요</h2>
-          <p>{errorMsg}</p>
-          <div className="wiz-nav">
-            <button className="btn-back" onClick={backToForm}>이전으로</button>
-            <button className="btn-next" onClick={runGenerate}>다시 시도</button>
-          </div>
-        </div>
-      )}
-
-      {phase === "result" && result && (
-        <div>
-          <ResultBox label="제목" content={result.제목} />
-          <PhotoPreview segments={result.본문_세그먼트} body={result.본문} photos={photos} />
-          <ResultBox label="주소" content={result.주소} />
-          <ResultBox label="전화번호" content={result.전화번호} />
-          <ResultBox label="링크" content={result.링크} />
-          <ResultBox label="해시태그" content={result.해시태그} />
-
-          {!saved ? (
-            <>
-              <div className="result-actions">
-                <button className="btn-back" onClick={runGenerate}>다시 만들기</button>
-                <button className="save-btn" onClick={handleSave} disabled={saving}>
-                  {saving ? "저장하는 중..." : "이 글 저장하기"}
-                </button>
-              </div>
-              {errorMsg && <p className="error-text">{errorMsg}</p>}
-            </>
-          ) : (
-            <div className="wiz-nav">
-              <button className="save-btn saved" style={{ flex: 1 }} disabled>저장됐어요 ✓</button>
-              <button className="btn-next" style={{ flex: 1 }} onClick={startOver}>새로 만들기</button>
-            </div>
-          )}
-        </div>
+      {phase !== "form" && (
+        <ResultView
+          phase={phase}
+          progress={progress}
+          charCount={charCount}
+          errorMsg={errorMsg}
+          result={result}
+          photos={photos}
+          saving={saving}
+          saved={saved}
+          onRetry={runGenerate}
+          onBackToForm={backToForm}
+          onSave={handleSave}
+          onStartOver={startOver}
+        />
       )}
     </div>
   );

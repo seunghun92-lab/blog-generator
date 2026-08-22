@@ -39,6 +39,7 @@ html,
 body {
   margin: 0;
   background: var(--bg);
+  overflow-x: hidden;
 }
 
 body {
@@ -170,6 +171,8 @@ body {
     flex: 1;
     text-align: center;
     border-left: none;
+    padding: 10px 6px;
+    font-size: 12px;
   }
 }
 
@@ -184,6 +187,12 @@ body {
   padding: 40px 20px;
 }
 
+@media (max-width: 600px) {
+  .page {
+    padding: 20px 12px 32px;
+  }
+}
+
 /* ══════ 위저드(카드) 공통 ══════ */
 .wizard {
   width: 100%;
@@ -192,6 +201,13 @@ body {
   border: 1px solid var(--line);
   border-radius: 22px;
   padding: 44px 48px 40px;
+}
+
+@media (max-width: 600px) {
+  .wizard {
+    padding: 26px 18px 24px;
+    border-radius: 18px;
+  }
 }
 
 .wiz-head {
@@ -215,6 +231,12 @@ body {
   color: var(--heading);
   margin: 0 0 6px;
   letter-spacing: -0.02em;
+}
+
+@media (max-width: 600px) {
+  .wiz-head h1 {
+    font-size: 22px;
+  }
 }
 
 .wiz-head p {
@@ -295,6 +317,12 @@ body {
   text-align: center;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+@media (max-width: 600px) {
+  .zone {
+    padding: 28px 14px;
+  }
 }
 
 .zone:hover {
@@ -497,6 +525,13 @@ body {
   font-weight: 700;
   cursor: pointer;
   border: none;
+}
+
+@media (max-width: 600px) {
+  .wiz-nav button {
+    padding: 14px 10px;
+    font-size: 13.5px;
+  }
 }
 
 .btn-back {
@@ -778,6 +813,15 @@ body {
   cursor: pointer;
 }
 
+@media (max-width: 600px) {
+  .result-actions {
+    flex-direction: column;
+  }
+  .result-actions .btn-back {
+    padding: 14px;
+  }
+}
+
 .result-actions .save-btn {
   flex: 1;
   margin-top: 0;
@@ -915,6 +959,13 @@ body {
   border-radius: 14px;
   background: white;
   cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .archive-item {
+    padding: 13px 14px;
+    gap: 8px;
+  }
 }
 
 .archive-item:hover {
@@ -1150,6 +1201,18 @@ body {
   border-radius: 20px;
   padding: 32px 34px;
   position: relative;
+}
+
+@media (max-width: 600px) {
+  .archive-modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+  .archive-modal {
+    padding: 24px 18px;
+    max-height: 88vh;
+    border-radius: 18px 18px 0 0;
+  }
 }
 
 .archive-modal-close {

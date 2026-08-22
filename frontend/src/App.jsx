@@ -36,7 +36,10 @@ export default function App() {
   }, []);
 
   const author = getDisplayName(session?.user);
-  const handleLogout = () => supabase.auth.signOut();
+  const handleLogout = () => {
+    if (hasUnsaved && !window.confirm("저장 안 한 글이 있어요. 그래도 로그아웃할까요?")) return;
+    supabase.auth.signOut();
+  };
 
   const goSection = (name) => {
     if (name === section) return;
@@ -61,7 +64,6 @@ export default function App() {
         <span className="brand">Blog-Generator</span>
         <div className="top-actions">
           <span className="name">{author}님</span>
-          <button onClick={() => goSection("detail")}>Home</button>
           <button onClick={handleLogout}>Logout</button>
         </div>
       </div>

@@ -514,6 +514,100 @@ body {
   color: var(--ink-faint);
 }
 
+/* ── 진행률 ── */
+.progress-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #efeadf;
+  overflow: hidden;
+  margin: 6px 0 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--amber-deep);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.result-loading p.progress-pct {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--amber-deep);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-loading p.progress-eta {
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin: 2px 0 20px;
+}
+
+/* ── 미니게임 (기다리는 동안) ── */
+.minigame {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border: 1.5px dashed var(--line);
+  border-radius: 16px;
+  background: var(--bg);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.minigame-score {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  background: white;
+  padding: 3px 10px;
+  border-radius: 999px;
+  z-index: 2;
+}
+
+.minigame-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.35);
+  animation: bubble-in 0.15s ease;
+}
+
+@keyframes bubble-in {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+  }
+}
+
 .result-box {
   background: white;
   border: 1px solid var(--line);

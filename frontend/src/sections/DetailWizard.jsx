@@ -1,8 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DropZone from "../components/DropZone";
 import ResultBox from "../components/ResultBox";
+import MiniGame from "../components/MiniGame";
 import { CHAR_COUNT_OPTIONS } from "../options";
 import { parseGuideFile, generatePreview, savePost } from "../api";
+
+// 글자수별 대략적인 예상 소요시간 (GPT 호출 1~5번, 재시도/이어쓰기 포함될 수 있어서 범위로 안내)
+const ETA_TEXT = {
+  800: "약 15~25초",
+  1200: "약 20~35초",
+  1600: "약 25~45초",
+  2000: "약 30~60초",
+};
 
 export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const [step, setStep] = useState(1);
@@ -22,6 +31,13 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const progressTimerRef = useRef(null);
+
+  useEffect(() => {
+    // 언마운트 시 진행률 타이머 정리
+    return () => clearInterval(progressTimerRef.current);
+  }, []);
 
   useEffect(() => {
     onUnsavedChange?.(phase === "result" && !saved);
@@ -83,6 +99,15 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const runGenerate = async () => {
     setPhase("loading");
     setErrorMsg("");
+    setProgress(0);
+
+    // 실제 진행률을 알 방법이 없어서(백엔드가 한 번에 응답), 92%까지는 점점 느려지면서
+    // 채워지다가, 응답이 오면 100%로 마무리하는 식으로 흉내낸다 (tqdm 느낌).
+    clearInterval(progressTimerRef.current);
+    progressTimerRef.current = setInterval(() => {
+      setProgress((p) => (p >= 92 ? 92 : p + (92 - p) * 0.06));
+    }, 200);
+
     try {
       const data = await generatePreview({
         guideText,
@@ -91,10 +116,13 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
         profile: {},
         style: {},
       });
+      clearInterval(progressTimerRef.current);
+      setProgress(100);
       setResult(data);
       setSaved(false);
       setPhase("result");
     } catch (err) {
+      clearInterval(progressTimerRef.current);
       setErrorMsg(err.message);
       setPhase("error");
     }
@@ -225,8 +253,12 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
 
       {phase === "loading" && (
         <div className="result-loading">
-          <div className="big-spinner" />
-          <p>글을 쓰고 있어요... (조금 걸릴 수 있어요)</p>
+          <p className="progress-pct">{Math.round(progress)}%</p>
+          <div className="progress-bar-track">
+            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="progress-eta">글을 쓰고 있어요 · 예상 소요시간 {ETA_TEXT[charCount] || "약 20~40초"}</p>
+          <MiniGame />
         </div>
       )}
 

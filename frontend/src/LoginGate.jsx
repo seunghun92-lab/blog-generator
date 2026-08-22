@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "./supabaseClient";
-import heroPhoto from "./assets/blogger-hero.jpg";
+import heroPhotoWebp from "./assets/blogger-hero.webp";
+import heroPhotoJpg from "./assets/blogger-hero.jpg";
 import "./LoginGate.css";
 
 export default function LoginGate() {
@@ -24,7 +25,10 @@ export default function LoginGate() {
   return (
     <div className="login-hero">
       <div className="login-photo">
-        <img src={heroPhoto} alt="노트에 글을 쓰는 블로거" />
+        <picture>
+          <source srcSet={heroPhotoWebp} type="image/webp" />
+          <img src={heroPhotoJpg} alt="노트에 글을 쓰는 블로거" fetchPriority="high" decoding="async" />
+        </picture>
       </div>
 
       <div className="login-content">

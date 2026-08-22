@@ -3,7 +3,7 @@
 """
 import os
 import json
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from supabase import create_client
@@ -71,26 +71,8 @@ async def parse_guide(guide_file: UploadFile = File(...)):
     return {"guide_text": guide_text}
 
 
-@app.post("/api/generate")
-async def generate_post(
-    guide_text: str = Form(...),
-    photo_count: int = Form(...),
-    char_count: int = Form(1200),
-    profile_json: str = Form("{}"),
-    style_json: str = Form("{}"),
-    guide_filename: str = Form(""),
-    author: str = Form(""),
-):
-    try:
-        profile = json.loads(profile_json)
-    except json.JSONDecodeError:
-        profile = {}
-
-    try:
-        style = json.loads(style_json)
-    except json.JSONDecodeError:
-        style = {}
-
+def _generate_content(log_tag, guide_text: str, photo_count: int, char_count: int, profile: dict, style: dict) -> dict:
+    """실제 GPT 호출 + 글 작성. DB는 건드리지 않고 결과 필드만 돌려준다 (실패 시 예외 발생)."""
     system_prompt = build_system_prompt()
     user_prompt = build_user_prompt(
         guide_text=guide_text,
@@ -112,23 +94,20 @@ async def generate_post(
         else:
             retry_prompt = user_prompt
 
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": retry_prompt},
-                ],
-                temperature=0.9,
-                max_tokens=max_tokens,
-            )
-            raw_text = response.choices[0].message.content
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"글 생성 중 오류가 발생했습니다: {str(e)}")
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": retry_prompt},
+            ],
+            temperature=0.9,
+            max_tokens=max_tokens,
+        )
+        raw_text = response.choices[0].message.content
 
         parsed = parse_gpt_response(raw_text)
         body_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
-        print(f"[시도 {attempt+1}] 본문 글자수: {body_len} / 최소: {min_chars} / max_tokens: {max_tokens}")
+        print(f"[{log_tag}] [시도 {attempt+1}] 본문 글자수: {body_len} / 최소: {min_chars} / max_tokens: {max_tokens}")
 
         # 이번 시도가 지금까지 중 가장 길면 저장해둔다 (3번 다 기준 미달이어도 최선의 결과를 쓰기 위해)
         if body_len > best_body_len:
@@ -173,49 +152,152 @@ async def generate_post(
             )
             extra_text = response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"[이어쓰기 실패, 기존 결과 유지] {e}")
+            print(f"[{log_tag}] [이어쓰기 실패, 기존 결과 유지] {e}")
             break
 
         parsed["본문"] = parsed["본문"].rstrip() + "\n\n" + extra_text
         raw_text = raw_text + "\n\n" + extra_text
         new_len = len(parsed["본문"].replace('\n', '').replace(' ', ''))
-        print(f"[이어쓰기] 본문 글자수: {new_len} / 목표: {char_count}")
+        print(f"[{log_tag}] [이어쓰기] 본문 글자수: {new_len} / 목표: {char_count}")
 
     fixed_body = force_line_breaks(parsed["본문"])
-    body_segments = split_photo_markers(fixed_body)
-    phone = format_phone_number(parsed["전화번호"])
-    hashtags = format_hashtags(parsed["해시태그"])
-
-    try:
-        supabase.table("post").insert({
-            "제목": parsed["제목"],
-            "본문": fixed_body,
-            "주소": parsed["주소"],
-            "전화번호": phone,
-            "링크": parsed["링크"],
-            "해시태그": hashtags,
-            "가이드파일명": guide_filename,
-            "작성자": author,
-        }).execute()
-    except Exception as e:
-        print(f"Supabase 저장 실패 (무시): {e}")
-
     return {
         "제목": parsed["제목"],
         "본문": fixed_body,
-        "본문_세그먼트": body_segments,
         "주소": parsed["주소"],
-        "전화번호": phone,
+        "전화번호": format_phone_number(parsed["전화번호"]),
         "링크": parsed["링크"],
-        "해시태그": hashtags,
-        "raw": raw_text,
+        "해시태그": format_hashtags(parsed["해시태그"]),
     }
+
+
+def _run_generation(post_id: int, guide_text: str, photo_count: int, char_count: int, profile: dict, style: dict):
+    """일괄 업로드용: 백그라운드에서 생성하고 끝나면 post_id 행을 결과로 업데이트한다 (자동 저장)."""
+    try:
+        fields = _generate_content(post_id, guide_text, photo_count, char_count, profile, style)
+        supabase.table("post").update({**fields, "status": "done"}).eq("id", post_id).execute()
+        print(f"[{post_id}] 생성 완료")
+    except Exception as e:
+        print(f"[{post_id}] 생성 실패: {e}")
+        try:
+            supabase.table("post").update({
+                "제목": "생성 실패",
+                "본문": f"글 생성 중 오류가 발생했어요: {e}",
+                "status": "failed",
+            }).eq("id", post_id).execute()
+        except Exception as e2:
+            print(f"[{post_id}] 실패 상태 저장도 실패: {e2}")
+
+
+@app.post("/api/generate")
+async def generate_post(
+    background_tasks: BackgroundTasks,
+    guide_text: str = Form(...),
+    photo_count: int = Form(...),
+    char_count: int = Form(1200),
+    profile_json: str = Form("{}"),
+    style_json: str = Form("{}"),
+    guide_filename: str = Form(""),
+    author: str = Form(""),
+):
+    try:
+        profile = json.loads(profile_json)
+    except json.JSONDecodeError:
+        profile = {}
+
+    try:
+        style = json.loads(style_json)
+    except json.JSONDecodeError:
+        style = {}
+
+    try:
+        insert_result = supabase.table("post").insert({
+            "가이드파일명": guide_filename,
+            "작성자": author,
+            "status": "pending",
+        }).execute()
+        post_id = insert_result.data[0]["id"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"생성 요청을 등록하지 못했어요: {str(e)}")
+
+    background_tasks.add_task(
+        _run_generation, post_id, guide_text, photo_count, char_count, profile, style
+    )
+
+    return {"id": post_id, "status": "pending"}
+
+
+@app.post("/api/generate-preview")
+async def generate_preview(
+    guide_text: str = Form(...),
+    photo_count: int = Form(...),
+    char_count: int = Form(1200),
+    profile_json: str = Form("{}"),
+    style_json: str = Form("{}"),
+):
+    """자세히 설정용: 그 자리에서 GPT 응답을 기다렸다가 결과를 바로 돌려준다. DB에는 저장하지 않는다
+    (저장은 /api/save-post 에서 사용자가 "저장하기"를 눌렀을 때만)."""
+    try:
+        profile = json.loads(profile_json)
+    except json.JSONDecodeError:
+        profile = {}
+
+    try:
+        style = json.loads(style_json)
+    except json.JSONDecodeError:
+        style = {}
+
+    try:
+        fields = _generate_content("preview", guide_text, photo_count, char_count, profile, style)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"글 생성 중 오류가 발생했어요: {str(e)}")
+
+    fields["본문_세그먼트"] = split_photo_markers(fields["본문"])
+    return fields
+
+
+@app.post("/api/save-post")
+async def save_post(
+    title: str = Form(..., alias="제목"),
+    body: str = Form(..., alias="본문"),
+    address: str = Form("", alias="주소"),
+    phone: str = Form("", alias="전화번호"),
+    link: str = Form("", alias="링크"),
+    hashtags: str = Form("", alias="해시태그"),
+    guide_filename: str = Form(""),
+    author: str = Form(""),
+):
+    """자세히 설정 결과 화면에서 "이 글 저장하기"를 눌렀을 때 실제로 DB에 저장한다."""
+    try:
+        insert_result = supabase.table("post").insert({
+            "제목": title,
+            "본문": body,
+            "주소": address,
+            "전화번호": phone,
+            "링크": link,
+            "해시태그": hashtags,
+            "가이드파일명": guide_filename,
+            "작성자": author,
+            "status": "done",
+        }).execute()
+        return {"id": insert_result.data[0]["id"], "status": "done"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"저장에 실패했어요: {str(e)}")
+
+
+@app.delete("/api/history/{post_id}")
+async def delete_post(post_id: int):
+    try:
+        supabase.table("post").delete().eq("id", post_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"삭제에 실패했어요: {str(e)}")
 
 
 @app.get("/api/history")
 async def get_history():
     try:
-        result = supabase.table("post").select("id, created_at, 제목, 가이드파일명, 작성자").order("created_at", desc=True).limit(50).execute()
+        result = supabase.table("post").select("id, created_at, 제목, 가이드파일명, 작성자, status").order("created_at", desc=True).limit(50).execute()
         return {"history": result.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"기록 조회 실패: {str(e)}")
@@ -225,7 +307,10 @@ async def get_history():
 async def get_post(post_id: int):
     try:
         result = supabase.table("post").select("*").eq("id", post_id).single().execute()
-        return result.data
+        data = result.data
+        if data and data.get("본문"):
+            data["본문_세그먼트"] = split_photo_markers(data["본문"])
+        return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"글 조회 실패: {str(e)}")
 

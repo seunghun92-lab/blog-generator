@@ -123,7 +123,7 @@ export default function BatchUpload({ author, showToast, onGoArchive }) {
     <div className="wizard">
       <div className="wiz-head">
         <p className="eyebrow">AI 블로그 자동 생성</p>
-        <h1>일괄 업로드</h1>
+        <h1>글 여러 개 만들기</h1>
         <p>.docx 파일을 한꺼번에 여러 개 골라주세요. 파일마다 사진도 따로 올릴 수 있어요.</p>
       </div>
 

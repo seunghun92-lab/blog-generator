@@ -61,7 +61,7 @@ export default function App() {
   return (
     <div className="app-root">
       <div className="app-topbar">
-        <span className="brand">Blog-Generator</span>
+        <button className="brand" onClick={handleLogout} title="로그아웃하고 로그인 화면으로">Blog-Generator</button>
         <div className="top-actions">
           <span className="name">{author}님</span>
           <button onClick={handleLogout}>Logout</button>
@@ -71,10 +71,10 @@ export default function App() {
       <div className="shell">
         <aside className="sidebar">
           <button className={section === "detail" ? "active" : ""} onClick={() => goSection("detail")}>
-            자세히 설정해서 만들기
+            글 1개 만들기
           </button>
           <button className={section === "batch" ? "active" : ""} onClick={() => goSection("batch")}>
-            일괄 업로드
+            글 여러 개 만들기
           </button>
           <button className={section === "archive" ? "active" : ""} onClick={() => goSection("archive")}>
             글 저장소

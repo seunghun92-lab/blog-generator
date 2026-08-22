@@ -68,6 +68,18 @@ body {
   font-size: 16px;
   color: var(--chrome-text);
   letter-spacing: -0.01em;
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.app-topbar .brand:hover {
+  background: rgba(247, 241, 232, 0.1);
+  opacity: 0.9;
 }
 
 .app-topbar .top-actions {

@@ -671,6 +671,72 @@ body {
   font-family: inherit;
 }
 
+/* ── 사진 마커 미리보기 ── */
+.photo-preview-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pp-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+}
+
+.pp-photo {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+.pp-photo-placeholder {
+  width: 100%;
+  max-width: 280px;
+  height: 90px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--amber);
+  background: #fdf8f0;
+  color: var(--amber-deep);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 글 저장소 수정 폼 ── */
+.edit-field {
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.edit-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+
+.edit-field input,
+.edit-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+  resize: vertical;
+}
+
 .save-btn {
   display: block;
   width: 100%;
@@ -998,6 +1064,65 @@ body {
   background: var(--heading);
   border-color: var(--heading);
   color: white;
+}
+
+/* ── 최근 가이드 재사용 ── */
+.recent-guides {
+  margin-top: 14px;
+}
+
+.recent-guides-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  margin: 0 0 8px;
+}
+
+.recent-guides-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recent-guide-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: white;
+  font-size: 12px;
+  color: var(--ink-dim);
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.recent-guide-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-guide-chip:hover {
+  background: var(--bg);
+}
+
+.recent-guide-x {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.recent-guide-x:hover {
+  color: #c0392b;
+  background: rgba(192, 57, 43, 0.08);
 }
 
 /* ── 글 저장소 상세 모달 ── */

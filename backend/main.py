@@ -285,6 +285,31 @@ async def save_post(
         raise HTTPException(status_code=500, detail=f"저장에 실패했어요: {str(e)}")
 
 
+@app.put("/api/history/{post_id}")
+async def update_post(
+    post_id: int,
+    title: str = Form(..., alias="제목"),
+    body: str = Form(..., alias="본문"),
+    address: str = Form("", alias="주소"),
+    phone: str = Form("", alias="전화번호"),
+    link: str = Form("", alias="링크"),
+    hashtags: str = Form("", alias="해시태그"),
+):
+    """글 저장소에서 저장된 글을 직접 수정했을 때 반영한다."""
+    try:
+        supabase.table("post").update({
+            "제목": title,
+            "본문": body,
+            "주소": address,
+            "전화번호": phone,
+            "링크": link,
+            "해시태그": hashtags,
+        }).eq("id", post_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"수정에 실패했어요: {str(e)}")
+
+
 @app.delete("/api/history/{post_id}")
 async def delete_post(post_id: int):
     try:

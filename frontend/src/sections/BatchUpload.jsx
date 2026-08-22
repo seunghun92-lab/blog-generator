@@ -5,7 +5,7 @@ import { parseGuideFile, generatePost } from "../api";
 let seq = 0;
 const nextId = (prefix) => `${prefix}-${Date.now()}-${seq++}`;
 
-export default function BatchUpload({ author, showToast, onGoArchive }) {
+export default function BatchUpload({ author, showToast, onGoArchive, onBatchQueued }) {
   const [files, setFiles] = useState([]); // [{id, file, guideText, parsing, error, photos:[{id,url,file}]}]
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState("select"); // select | status
@@ -68,6 +68,7 @@ export default function BatchUpload({ author, showToast, onGoArchive }) {
   const ready = files.length > 0 && files.every((f) => !f.parsing && f.guideText && !f.error && f.photos.length > 0);
 
   const handleSubmitBatch = async () => {
+    onBatchQueued?.(); // 사용자 클릭 제스처 안에서 바로 호출 (알림 권한 요청 타이밍 때문)
     setSubmitting(true);
     const results = await Promise.allSettled(
       files.map((f) =>

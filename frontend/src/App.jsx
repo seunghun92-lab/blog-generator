@@ -4,6 +4,7 @@ import LoginGate from "./LoginGate";
 import DetailWizard from "./sections/DetailWizard";
 import BatchUpload from "./sections/BatchUpload";
 import Archive from "./sections/Archive";
+import { getHistory } from "./api";
 
 // 구글 계정에서 표시용 이름을 뽑아낸다 (없으면 이메일 앞부분으로 대체)
 function getDisplayName(user) {
@@ -26,6 +27,53 @@ export default function App() {
     clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToast(""), 3200);
   };
+
+  // ── 일괄 업로드 완료 시 브라우저 알림 ──
+  const [watchingBatch, setWatchingBatch] = useState(false);
+  const sawPendingRef = useRef(false);
+
+  const notifyBatchDone = (message) => {
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      try {
+        new Notification("Blog-Generator", { body: message });
+      } catch {
+        // 알림 생성이 막힌 환경(일부 모바일 브라우저 등)은 토스트로만 대체
+      }
+    }
+    showToast(message);
+  };
+
+  // 배치 제출 버튼 클릭 시(=사용자 제스처 안에서) 호출 - 권한 요청은 여기서 바로 해야
+  // 브라우저가 안 막고 프롬프트를 띄워준다.
+  const startWatchingBatch = () => {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    sawPendingRef.current = false;
+    setWatchingBatch(true);
+  };
+
+  useEffect(() => {
+    if (!watchingBatch) return;
+    const check = async () => {
+      try {
+        const data = await getHistory();
+        const pendingCount = (data.history || []).filter((h) => h.status === "pending").length;
+        if (pendingCount > 0) {
+          sawPendingRef.current = true;
+        } else if (sawPendingRef.current) {
+          setWatchingBatch(false);
+          notifyBatchDone("생성 완료! 글 저장소에서 확인해보세요.");
+        }
+      } catch {
+        // 폴링 실패는 조용히 무시하고 다음 주기에 재시도
+      }
+    };
+    check();
+    const timer = setInterval(check, 6000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchingBatch]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -87,7 +135,12 @@ export default function App() {
             <DetailWizard author={author} showToast={showToast} onUnsavedChange={setHasUnsaved} />
           )}
           {section === "batch" && (
-            <BatchUpload author={author} showToast={showToast} onGoArchive={() => setSection("archive")} />
+            <BatchUpload
+              author={author}
+              showToast={showToast}
+              onGoArchive={() => setSection("archive")}
+              onBatchQueued={startWatchingBatch}
+            />
           )}
           {section === "archive" && <Archive showToast={showToast} />}
         </div>

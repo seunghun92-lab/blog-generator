@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import DropZone from "../components/DropZone";
 import ResultBox from "../components/ResultBox";
+import PhotoPreview from "../components/PhotoPreview";
 import MiniGame from "../components/MiniGame";
 import { CHAR_COUNT_OPTIONS } from "../options";
 import { parseGuideFile, generatePreview, savePost } from "../api";
+import { getRecentGuides, saveRecentGuide, removeRecentGuide } from "../recentGuides";
 
 // 글자수별 대략적인 예상 소요시간 (GPT 호출 1~5번, 재시도/이어쓰기 포함될 수 있어서 범위로 안내)
 const ETA_TEXT = {
@@ -33,6 +35,7 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const [saved, setSaved] = useState(false);
   const [progress, setProgress] = useState(0);
   const progressTimerRef = useRef(null);
+  const [recentGuides, setRecentGuides] = useState(() => getRecentGuides());
 
   useEffect(() => {
     // 언마운트 시 진행률 타이머 정리
@@ -56,12 +59,26 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
     try {
       const data = await parseGuideFile(file);
       setGuideText(data.guide_text);
+      saveRecentGuide(file.name, data.guide_text);
+      setRecentGuides(getRecentGuides());
     } catch (err) {
       setErrorMsg(err.message);
       setGuideFile(null);
     } finally {
       setGuideLoading(false);
     }
+  };
+
+  const pickRecentGuide = (g) => {
+    setGuideFile({ name: g.name });
+    setGuideText(g.guideText);
+    setErrorMsg("");
+  };
+
+  const deleteRecentGuide = (e, name) => {
+    e.stopPropagation();
+    removeRecentGuide(name);
+    setRecentGuides(getRecentGuides());
   };
 
   const clearGuide = () => {
@@ -200,6 +217,19 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
                   <button className="clear-all" onClick={clearGuide}>삭제</button>
                 </div>
               )}
+              {recentGuides.length > 0 && (
+                <div className="recent-guides">
+                  <p className="recent-guides-label">최근 가이드</p>
+                  <div className="recent-guides-list">
+                    {recentGuides.map((g) => (
+                      <button type="button" key={g.name} className="recent-guide-chip" onClick={() => pickRecentGuide(g)}>
+                        <span className="recent-guide-name">{g.name}</span>
+                        <span className="recent-guide-x" onClick={(e) => deleteRecentGuide(e, g.name)}>×</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {errorMsg && <p className="error-text">{errorMsg}</p>}
               <div className="wiz-nav">
                 <button className="btn-next" style={{ flex: 1 }} onClick={() => goStep(2)} disabled={!guideText}>
@@ -277,7 +307,7 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
       {phase === "result" && result && (
         <div>
           <ResultBox label="제목" content={result.제목} />
-          <ResultBox label="본문" content={result.본문} />
+          <PhotoPreview segments={result.본문_세그먼트} body={result.본문} photos={photos} />
           <ResultBox label="주소" content={result.주소} />
           <ResultBox label="전화번호" content={result.전화번호} />
           <ResultBox label="링크" content={result.링크} />

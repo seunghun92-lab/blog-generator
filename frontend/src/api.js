@@ -105,3 +105,26 @@ export async function deletePost(postId) {
   if (!res.ok) throw new Error("삭제 실패");
   return res.json();
 }
+
+// 글 저장소에서 저장된 글을 직접 수정
+export async function updatePost(postId, fields) {
+  const formData = new FormData();
+  formData.append("제목", fields.제목 || "");
+  formData.append("본문", fields.본문 || "");
+  formData.append("주소", fields.주소 || "");
+  formData.append("전화번호", fields.전화번호 || "");
+  formData.append("링크", fields.링크 || "");
+  formData.append("해시태그", fields.해시태그 || "");
+
+  const res = await fetch(`${API_BASE}/api/history/${postId}`, {
+    method: "PUT",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "수정 중 오류가 발생했습니다.");
+  }
+
+  return res.json();
+}

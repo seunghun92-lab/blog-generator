@@ -196,7 +196,7 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
               {guideLoading && <p className="hint">가이드 읽는 중...</p>}
               {guideFile && !guideLoading && (
                 <div className="file-count">
-                  <span><b>1개</b> 선택됨</span>
+                  <span><b>1개</b> 선택됨 · {guideFile.name}</span>
                   <button className="clear-all" onClick={clearGuide}>삭제</button>
                 </div>
               )}

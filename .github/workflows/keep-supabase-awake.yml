@@ -1,0 +1,29 @@
+name: Supabase 깨어있게 유지
+
+# Supabase 무료 플랜은 7일간 API 호출이 없으면 프로젝트가 자동으로 일시정지된다.
+# 그러면 배포된 사이트가 DB에 접속을 못 해서 "글 저장소"가 비어 보이고,
+# Supabase 대시보드에 들어가 직접 깨워야만 다시 보이는 문제가 생긴다.
+# 매일 한 번 가벼운 조회 요청을 보내서 이 자동 정지를 막는다.
+on:
+  schedule:
+    - cron: "0 3 * * *" # 매일 UTC 03:00 (KST 낮 12시)
+  workflow_dispatch: {} # 필요하면 Actions 탭에서 수동으로도 실행 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Supabase에 가벼운 조회 요청 보내기
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/post?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+          echo "Supabase 응답 코드: $status"
+          if [ "$status" -ge 400 ]; then
+            echo "::error::Supabase 요청이 실패했어요 (HTTP $status). SUPABASE_URL / SUPABASE_KEY 시크릿을 확인해주세요."
+            exit 1
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

@@ -32,6 +32,11 @@ def build_user_prompt(
         else:
             style_lines.append(f"- {key_name}: 업체 성격에 어울리게 자유롭게 설정")
 
+    if photo_count > 0:
+        photo_line = f"- 첨부된 사진 개수: {photo_count}장 (순서대로 [사진1]~[사진{photo_count}] 마커 사용)"
+    else:
+        photo_line = "- 첨부된 사진 없음: 본문에 [사진N] 마커를 절대 넣지 마세요."
+
     prompt = f"""아래는 포스팅 가이드 원문입니다.
 
 === 포스팅 가이드 ===
@@ -40,7 +45,7 @@ def build_user_prompt(
 
 [작성 조건]
 - 본문 글자수: 공백 제외 최소 {char_count}자 이상 반드시 작성해야 합니다. 글자수가 부족하면 맛, 분위기, 서비스, 주변 환경, 개인 감상 등을 더 구체적이고 풍부하게 묘사해서 글자수를 채워주세요.
-- 첨부된 사진 개수: {photo_count}장 (순서대로 [사진1]~[사진{photo_count}] 마커 사용)
+{photo_line}
 
 [글쓴이 프로필 설정]
 {chr(10).join(profile_lines)}

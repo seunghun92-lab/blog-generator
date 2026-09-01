@@ -65,7 +65,7 @@ export default function BatchUpload({ author, showToast, onGoArchive, onBatchQue
     setFiles([]);
   };
 
-  const ready = files.length > 0 && files.every((f) => !f.parsing && f.guideText && !f.error && f.photos.length > 0);
+  const ready = files.length > 0 && files.every((f) => !f.parsing && f.guideText && !f.error);
 
   const handleSubmitBatch = async () => {
     onBatchQueued?.(); // 사용자 클릭 제스처 안에서 바로 호출 (알림 권한 요청 타이밍 때문)
@@ -168,7 +168,7 @@ export default function BatchUpload({ author, showToast, onGoArchive, onBatchQue
                   <button type="button" className="thumb-x" onClick={() => removePhoto(f.id, p.id)}>×</button>
                 </div>
               ))}
-              {f.photos.length === 0 && <span className="batch-photo-hint">사진을 추가해주세요</span>}
+              {f.photos.length === 0 && <span className="batch-photo-hint">사진 없이도 생성돼요 (선택)</span>}
             </div>
           </div>
         ))}
@@ -176,7 +176,7 @@ export default function BatchUpload({ author, showToast, onGoArchive, onBatchQue
 
       <div className="wiz-nav">
         <button className="btn-next" style={{ flex: 1 }} onClick={handleSubmitBatch} disabled={!ready || submitting}>
-          {submitting ? "등록하는 중..." : ready ? `선택한 ${files.length}개 한번에 생성 시작하기` : "모든 자료에 사진을 1장 이상 추가해주세요"}
+          {submitting ? "등록하는 중..." : ready ? `선택한 ${files.length}개 한번에 생성 시작하기` : "가이드 파일을 불러오는 중이에요"}
         </button>
       </div>
     </div>

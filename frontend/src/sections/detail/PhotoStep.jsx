@@ -17,7 +17,7 @@ export default function PhotoStep({
     <div>
       <DropZone accept="image/*" multiple onFiles={onFiles}>
         <div className="zone-main">사진을 여기에 끌어다 놓으세요</div>
-        <div className="zone-sub">여러 장 한번에 선택 가능 (첫 장 = 대표이미지)</div>
+        <div className="zone-sub">여러 장 한번에 선택 가능 (첫 장 = 대표이미지) · 사진 없이도 생성할 수 있어요</div>
         <span className="zone-btn">사진 선택</span>
       </DropZone>
       {photos.length > 0 && (
@@ -46,7 +46,7 @@ export default function PhotoStep({
       {errorMsg && <p className="error-text">{errorMsg}</p>}
       <div className="wiz-nav">
         <button className="btn-back" onClick={onBack}>이전</button>
-        <button className="btn-next" onClick={onGenerate} disabled={photos.length === 0}>
+        <button className="btn-next" onClick={onGenerate}>
           생성 시작하기
         </button>
       </div>

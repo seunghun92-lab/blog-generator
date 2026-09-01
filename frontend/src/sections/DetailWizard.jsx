@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import GuideStep from "./detail/GuideStep";
 import PhotoStep from "./detail/PhotoStep";
 import ResultView from "./detail/ResultView";
-import { parseGuideFile, generatePreview, savePost } from "../api";
+import { parseGuideFile, parseGuidePhoto, generatePreview, savePost } from "../api";
+
+const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
 import { getRecentGuides, saveRecentGuide, removeRecentGuide } from "../recentGuides";
 
 export default function DetailWizard({ author, showToast, onUnsavedChange }) {
@@ -39,15 +41,19 @@ export default function DetailWizard({ author, showToast, onUnsavedChange }) {
   const handleGuideFiles = async (files) => {
     const file = files[0];
     if (!file) return;
-    if (!file.name.endsWith(".docx")) {
-      setErrorMsg("가이드 파일은 .docx 형식만 업로드할 수 있어요.");
+    const isDocx = file.name.endsWith(".docx");
+    const isPhoto = IMAGE_EXT.test(file.name);
+    if (!isDocx && !isPhoto) {
+      setErrorMsg("가이드는 .docx 파일이나 손글씨 사진(jpg/png/webp)만 업로드할 수 있어요.");
       return;
     }
     setGuideFile(file);
     setGuideLoading(true);
     setErrorMsg("");
     try {
-      const data = await parseGuideFile(file);
+      // 사진이면 GPT-4o Vision으로 글자를 읽어오고(OCR), docx면 문서에서 바로 텍스트를 뽑는다.
+      // 이후 로직은 가이드 텍스트가 어디서 왔든 완전히 동일하게 처리된다.
+      const data = isDocx ? await parseGuideFile(file) : await parseGuidePhoto(file);
       setGuideText(data.guide_text);
       saveRecentGuide(file.name, data.guide_text);
       setRecentGuides(getRecentGuides());

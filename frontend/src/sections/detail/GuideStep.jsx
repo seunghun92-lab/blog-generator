@@ -15,12 +15,12 @@ export default function GuideStep({
 }) {
   return (
     <div>
-      <DropZone accept=".docx" multiple={false} onFiles={onFiles}>
+      <DropZone accept=".docx,image/jpeg,image/png,image/webp" multiple={false} onFiles={onFiles}>
         <div className="zone-main">{guideFile ? guideFile.name : "가이드 파일을 여기에 끌어다 놓으세요"}</div>
-        <div className="zone-sub">.docx 파일만 가능</div>
+        <div className="zone-sub">.docx 파일 또는 손글씨 사진(jpg/png/webp) 가능</div>
         <span className="zone-btn">파일 선택</span>
       </DropZone>
-      {guideLoading && <p className="hint">가이드 읽는 중...</p>}
+      {guideLoading && <p className="hint">가이드 읽는 중... (사진이면 글자를 읽는 데 몇 초 더 걸려요)</p>}
       {guideFile && !guideLoading && (
         <div className="file-count">
           <span><b>1개</b> 선택됨 · {guideFile.name}</span>
